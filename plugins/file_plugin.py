@@ -63,6 +63,7 @@ class FilePlugin:
         file_path = f"./coding/{repo}/{file_path}"
         try:
             with open(file_path, "r") as file:
+                print(f"READ FILE {file_path}")
                 return file.read()
         except FileNotFoundError:
             return f"Error: File '{file_path}' not found."

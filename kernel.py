@@ -69,6 +69,7 @@ async def main():
 
     coder_id = "coder"
     coder_kernel = create_kernel_with_chat_completion(coder_id)
+    coder_kernel.add_plugin(plugin=FilePlugin(), plugin_name="FilePlugin")
     coder_settings = coder_kernel.get_prompt_execution_settings_from_service_id(service_id=coder_id)
     coder_settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
 
@@ -79,38 +80,6 @@ async def main():
         instructions=PROMPT_CODE_GEN,
         execution_settings=coder_settings,
         #agentops_name="Programmer",
-    )
-
-    writer_id = "writer"
-    writer_kernel = create_kernel_with_chat_completion(writer_id)
-
-    writer_kernel.add_plugin(FilePlugin(), plugin_name="FilePlugin")
-    file_settings = writer_kernel.get_prompt_execution_settings_from_service_id(service_id=writer_id)
-    file_settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
-
-    file_writer = ChatCompletionAgent(
-        service_id=writer_id,
-        kernel=writer_kernel,
-        name=FILE_MANI_NAME,
-        instructions=PROMPT_FILE_MANIPULATOR,
-        execution_settings=file_settings,
-        #agentops_name="FileManager",
-    )
-    
-    reader_id = "reader"
-    reader_kernel = create_kernel_with_chat_completion(reader_id)
-
-    reader_kernel.add_plugin(FilePlugin(), plugin_name="FilePlugin")
-    file_settings = reader_kernel.get_prompt_execution_settings_from_service_id(service_id=reader_id)
-    file_settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
-
-    file_reader = ChatCompletionAgent(
-        service_id=reader_id,
-        kernel=reader_kernel,
-        name=FILE_READ_NAME,
-        instructions=PROMPT_FILE_READ,
-        execution_settings=file_settings,
-        #agentops_name="FileManager",
     )
 
     tester_id = "tester"
@@ -127,7 +96,7 @@ async def main():
         name=TESTER_NAME,
         instructions=CODE_PREP,
         execution_settings=tester_settings,
-        #agentops_name="Tester",
+        agentops_name="Tester",
     )
 
     selection_function = KernelFunctionFromPrompt(
@@ -144,7 +113,7 @@ async def main():
     termination_kernel = create_kernel_with_chat_completion("termination")
 
     group_chat = AgentGroupChat(
-        agents=[issue_analyzer_agent, coder_agent, file_writer, tester_agent, file_reader],
+        agents=[issue_analyzer_agent, coder_agent, tester_agent],
         selection_strategy=KernelFunctionSelectionStrategy(
             function=selection_function,
             kernel=selection_kernel,
@@ -193,7 +162,7 @@ async def main():
         random.shuffle(rows)
         log = open('./swebench/log.txt', "a")
 
-        for row in rows[22:30]:
+        for row in rows[22:31]:
             repo = row["repo"]
             print(repo)
             issue = int(re.search(r'\d+', row["instance_id"]).group())

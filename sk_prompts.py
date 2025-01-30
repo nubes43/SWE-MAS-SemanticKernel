@@ -30,13 +30,15 @@ You will receive a structured output with information about the Issue and the Re
 
 In general you work together with another agent: The File Manager, who will do all file operations you ask him for.
 Your Tasks: They are split in multiple of your turns
-1. Find where the issue lies. Prompt the File Manager with reading in the files you need BEFORE Trying to fix it. Read needed dependencies in as well.
+1. Find where the issue lies. Read in the files you need by using the read_file(path, repo) tool before trying to fix it. Read needed dependencies in as well.
 3. Fix the Issue. Keep the existing Code you found by reading the file and implement your changes in order to fix the bug into it. Respect the suggestions.
-4. Hand the whole reworked File Code to the File Manager and let him change the code within the repository.
+4. Hand the whole reworked File Code to the File Manager and let him change the code within the repository. You pass the accumulated code (The Code found in the file with your changes integrated) to the tool write_file(repository, path, content)
 
-It is very important to KEEP EXISTING LOGIC within the files.
+Make sure to write correctly formatted python-code to the file and keep in mind that this function overwrites the existing file.
+It is very important to KEEP EXISTING LOGIC when overwriting.
 
-Provide the changes you made in structured form to the File Manager containing for each changed file:
+ALWAYS READ THE FILES BEFORE TRYING TO WRITE FILES. You need the context for really integrating your code into the file. Build a string that contains the entire file content after your editing and pass it to the write function.
+Provide the changes you made in structured form containing for each changed file:
 - File Path
 - Entire File Code
 
@@ -44,12 +46,13 @@ Also always provide the Repository Name.
 
 You can also be tasked when changed code already exists. In that case you would have to edit the code further respecting the additional Information received.
 
-The code you provide has to be changed in the local repository by a file manipulator agent.
+The code you provide has to be changed in the local repository by using your tools.
 
-When needing File Managers assistance. Command him to do the specific operation like.
+### HINTS:
+- Always use relative file paths after the repository folder (e.g., "src/main.py").
+- Log any issues (e.g., file not found) and retry before proceeding.
+- If multiple files are listed, process them sequentially.
 
-"Now read the file [file_path]" or
-"Proceed with writing the file [file_path]"
 """
 
 CODE_PREP = """
@@ -193,18 +196,14 @@ SELECTION_PROMPT = f"""
         Choose only from these participants and instruct them with the following:
         - {ANALYZER_NAME}: "Analyze Issue"
         - {CODER_NAME}: "Fix the given Issue in the repository"
-        - {FILE_MANI_NAME}: "Overwrite the changed files"
-        - {FILE_READ_NAME}: "Read and print the provided files"
         - {TESTER_NAME}: "Create a test file and start execution."
 
         EVERYONE NEEDS TO USE THEIR TOOLS
         Always follow these rules when selecting the next participant:
         1. After user input, it is {ANALYZER_NAME}'s turn. Make sure the analyzer cloned and checked out the repository as well as printed all the file paths of the local repository before continuing.
-        2. After {ANALYZER_NAME} replies, it is {CODER_NAME}'s and {FILE_MANI_NAME}'s and {FILE_READ_NAME}'s turn.
-        3. {CODER_NAME} has to be invoked and reply.
-        4. After {CODER_NAME} depending on if files are to read or written it is {FILE_MANI_NAME}'s or {FILE_READ_NAME}'s turn.
-        5. After {FILE_MANI_NAME} or {FILE_READ_NAME} replies and has written/read files, it is {TESTER_NAME}'s turn only if "TERMINATE" is within {FILE_MANI_NAME}'s reply. Else Go back to step 3.
-        6. After {TESTER_NAME} replies, go back to step 3.
+        2. After {ANALYZER_NAME} replies, it is {CODER_NAME}'s turn.
+        3. Let {CODER_NAME} take turns until you are satisfied with the repository changes. When Satisfied proceed to {TESTER_NAME}
+        4. After {TESTER_NAME} replies, go back to step 3.
 
         History:
         {{{{$history}}}}
