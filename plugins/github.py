@@ -198,7 +198,7 @@ class GitHubPlugin:
 
             # Git-Klon-Befehl ausführen
             subprocess.run(
-                ["git", "clone", "--branch", "main", repo_url, str(repo_path)],
+                ["git", "clone", repo_url, str(repo_path)],
                 check=True,
             )
             return f"Repository erfolgreich geklont: {repo_path}"

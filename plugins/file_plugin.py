@@ -24,7 +24,7 @@ class FilePlugin:
             return f"An error occurred while writing to the file: {e}"
 
     @kernel_function
-    async def list_files_in_repository(self, repo: str) -> list[str]:
+    def list_files_in_repository(self, repo: str) -> list[str]:
         """
         Lists all files in a given repository directory recursively.
 
@@ -46,22 +46,25 @@ class FilePlugin:
             return file_list
         except Exception as e:
             return [f"Error: An error occurred while listing files: {e}"]
-    # @kernel_function
-    # async def read_file(file_path: str, repo: str) -> str:
-    #     """
-    #     Reads the content of a file and returns it as a string.
+        
+    @kernel_function(name="read_file",
+                    description="Read a file within the repository using file_path and repository_name")
+    def read_file(self, file_path: str, repo: str) -> str:
+        """
+        Reads the content of a file and returns it as a string.
 
-    #     Args:
-    #         file_path (str): Path to the file to be read.
+        Args:
+            file_path (str): Path to the file to be read.
+            repo (str): Name of the Repository.
 
-    #     Returns:
-    #         str: Content of the file or an error message.
-    #     """
-    #     file_path = f"./coding/{repo}/{file_path}"
-    #     try:
-    #         with open(file_path, "r") as file:
-    #             return file.read()
-    #     except FileNotFoundError:
-    #         return f"Error: File '{file_path}' not found."
-    #     except Exception as e:
-    #         return f"Error: An error occurred while reading the file: {e}"
+        Returns:
+            str: Content of the file or an error message.
+        """
+        file_path = f"./coding/{repo}/{file_path}"
+        try:
+            with open(file_path, "r") as file:
+                return file.read()
+        except FileNotFoundError:
+            return f"Error: File '{file_path}' not found."
+        except Exception as e:
+            return f"Error: An error occurred while reading the file: {e}"

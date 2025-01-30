@@ -52,6 +52,11 @@ async def main():
         GitHubPlugin(settings=GitHubSettings(token=os.environ["GITHUB_TOKEN"])),
         plugin_name="GitHubPlugin",
     )
+    
+    issue_analyzer_kernel.add_plugin(
+        FilePlugin(),
+        plugin_name="FilePlugin",
+    )
 
     issue_analyzer_agent = ChatCompletionAgent(
         service_id=issue_analyzer_id,
@@ -76,18 +81,34 @@ async def main():
         #agentops_name="Programmer",
     )
 
-    file_id = "file"
-    file_kernel = create_kernel_with_chat_completion(file_id)
+    writer_id = "writer"
+    writer_kernel = create_kernel_with_chat_completion(writer_id)
 
-    file_kernel.add_plugin(FilePlugin(), plugin_name="FilePlugin")
-    file_settings = file_kernel.get_prompt_execution_settings_from_service_id(service_id=file_id)
+    writer_kernel.add_plugin(FilePlugin(), plugin_name="FilePlugin")
+    file_settings = writer_kernel.get_prompt_execution_settings_from_service_id(service_id=writer_id)
     file_settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
 
-    file_agent = ChatCompletionAgent(
-        service_id=file_id,
-        kernel=file_kernel,
+    file_writer = ChatCompletionAgent(
+        service_id=writer_id,
+        kernel=writer_kernel,
         name=FILE_MANI_NAME,
         instructions=PROMPT_FILE_MANIPULATOR,
+        execution_settings=file_settings,
+        #agentops_name="FileManager",
+    )
+    
+    reader_id = "reader"
+    reader_kernel = create_kernel_with_chat_completion(reader_id)
+
+    reader_kernel.add_plugin(FilePlugin(), plugin_name="FilePlugin")
+    file_settings = reader_kernel.get_prompt_execution_settings_from_service_id(service_id=reader_id)
+    file_settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
+
+    file_reader = ChatCompletionAgent(
+        service_id=reader_id,
+        kernel=reader_kernel,
+        name=FILE_READ_NAME,
+        instructions=PROMPT_FILE_READ,
         execution_settings=file_settings,
         #agentops_name="FileManager",
     )
@@ -123,7 +144,7 @@ async def main():
     termination_kernel = create_kernel_with_chat_completion("termination")
 
     group_chat = AgentGroupChat(
-        agents=[issue_analyzer_agent, coder_agent, file_agent, tester_agent],
+        agents=[issue_analyzer_agent, coder_agent, file_writer, tester_agent, file_reader],
         selection_strategy=KernelFunctionSelectionStrategy(
             function=selection_function,
             kernel=selection_kernel,
@@ -172,7 +193,7 @@ async def main():
         random.shuffle(rows)
         log = open('./swebench/log.txt', "a")
 
-        for row in rows[:10]:
+        for row in rows[22:30]:
             repo = row["repo"]
             print(repo)
             issue = int(re.search(r'\d+', row["instance_id"]).group())
