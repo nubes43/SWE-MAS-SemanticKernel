@@ -1,5 +1,5 @@
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import subprocess
 import requests
 import os
@@ -7,100 +7,13 @@ import base64
 from pathlib import Path
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
 
-class Repo(BaseModel):
-    id: int = Field(..., alias="id")
-    name: str = Field(..., alias="full_name")
-    description: str | None = Field(None, alias="description")
-    url: str = Field(..., alias="html_url")
-
-
-class User(BaseModel):
-    id: int = Field(..., alias="id")
-    login: str = Field(..., alias="login")
-    name: str | None = Field(None, alias="name")
-    company: str | None = Field(None, alias="company")
-    url: str = Field(..., alias="html_url")
-
-
-class Label(BaseModel):
-    id: int = Field(..., alias="id")
-    name: str = Field(..., alias="name")
-    description: str | None = Field(None, alias="description")
-
-
-class Issue(BaseModel):
-    id: int = Field(..., alias="id")
-    number: int = Field(..., alias="number")
-    url: str = Field(..., alias="html_url")
-    title: str = Field(..., alias="title")
-    state: str = Field(..., alias="state")
-    labels: list[Label] = Field(..., alias="labels")
-    when_created: str | None = Field(None, alias="created_at")
-    when_closed: str | None = Field(None, alias="closed_at")
-
-
-class IssueDetail(Issue):
-    body: str | None = Field(None, alias="body")
-
-
-# endregion
-
-
 class GitHubSettings(BaseModel):
     base_url: str = "https://api.github.com"
     token: str
 
-
 class GitHubPlugin:
     def __init__(self, settings: GitHubSettings):
         self.settings = settings
-
-    #@kernel_function
-    async def get_user_profile(self) -> str:#"User":
-        async with self.create_client() as client:
-            response = await self.make_request(client, "/user")
-            return User(**response).__str__
-
-    #@kernel_function
-    async def get_repository(self, organization: str, repo: str) -> str:#"Repo":
-        async with self.create_client() as client:
-            response = await self.make_request(client, f"/repos/{organization}/{repo}")
-            return Repo(**response).__str__
-
-    # @kernel_function
-    # async def get_issues(
-    #     self,
-    #     organization: str,
-    #     repo: str,
-    #     max_results: int | None = None,
-    #     state: str = "",
-    #     label: str = "",
-    #     assignee: str = "",
-    # ) -> list["Issue"]:
-    #     async with self.create_client() as client:
-    #         path = f"/repos/{organization}/{repo}/issues?"
-    #         path = self.build_query(path, "state", state)
-    #         path = self.build_query(path, "assignee", assignee)
-    #         path = self.build_query(path, "labels", label)
-    #         path = self.build_query(path, "per_page", str(max_results) if max_results else "")
-    #         response = await self.make_request(client, path)
-    #         return [Issue(**issue) for issue in response]
-
-    #@kernel_function
-    async def get_issue_detail(self, organization: str, repo: str, issue_id: int) -> str:#"IssueDetail":
-        async with self.create_client() as client:
-            path = f"/repos/{organization}/{repo}/issues/{issue_id}"
-            response = await self.make_request(client, path)
-            return IssueDetail(**response).__str__
-
-    def create_client(self) -> httpx.AsyncClient:
-        headers = {
-            "User-Agent": "request",
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {self.settings.token}",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
-        return httpx.AsyncClient(base_url=self.settings.base_url, headers=headers)
 
     @staticmethod
     def build_query(path: str, key: str, value: str) -> str:
@@ -198,7 +111,7 @@ class GitHubPlugin:
 
             # Git-Klon-Befehl ausführen
             subprocess.run(
-                ["git", "clone", "--branch", "main", repo_url, str(repo_path)],
+                ["git", "clone", repo_url, str(repo_path)],
                 check=True,
             )
             return f"Repository erfolgreich geklont: {repo_path}"
@@ -224,4 +137,3 @@ class GitHubPlugin:
             print(f"Successfully checked out to commit: {commit_hash}")
         except subprocess.CalledProcessError as e:
             print(f"Error during checkout: {e}")
-            
